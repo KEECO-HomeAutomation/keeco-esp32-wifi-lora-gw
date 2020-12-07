@@ -21,6 +21,8 @@ class ConfigurationHandler {
       bool wifiIsConnected;               //WiFi is connected to Infrastructure Network
       bool softApRunning;                 //Device functions as an AP
       bool authenticated;                 //webserver authentication
+      bool mqttIsConnected;
+      bool loraIsConnected;
       long auth_timestamp;                //Timestamp when the authentication happened. Being used to logout automatically after 5 minutes.
     };
     stats statuses;

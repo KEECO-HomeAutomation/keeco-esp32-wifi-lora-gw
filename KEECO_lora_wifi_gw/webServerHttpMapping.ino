@@ -8,7 +8,6 @@ void initWebserver() {
   webserver.on("/info", handleNodeInfo);
   webserver.on("/mdns", mdnsQueryHandler);
   webserver.on("/send_new_settings", HTTP_POST, handleReceiveSettings);
-  //httpUpdater.setup(&webserver, update_path, update_username, update_password);
   webserver.begin();
 #ifdef DEBUG
   Serial.println("Webserver initialized...");

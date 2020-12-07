@@ -16,11 +16,9 @@
 #include <WiFiClientSecure.h>
 #include <WebServer.h>
 #include <ESPmDNS.h>
-//#include <Update.h>
 #include <arduino-timer.h>             //https://github.com/contrem/arduino-timer
 #include <FS.h>
 #include "SPIFFS.h"
-//#include <ESP8266TrueRandom.h> //https://github.com/marvinroger/ESP8266TrueRandom, for the UUID generation
 #include <PubSubClient.h>      //https://pubsubclient.knolleary.net/api.html
 #include <ArduinoOTA.h>
 #include <WiFiUdp.h>
@@ -40,7 +38,6 @@ const char* update_username = "admin";
 const char* update_password = "admin";
 
 WebServer webserver(80);
-//ESP8266HTTPUpdateServer httpUpdater;
 
 IPAddress apIP(192, 168, 4, 1);
 IPAddress netMsk(255, 255, 255, 0);
@@ -107,14 +104,16 @@ void setup() {
   dh.addLine("Help: {\"command\":\"help\"}");
   Serial.println("https://bit.ly/2WPt42i");
   dh.addLine(toStringIp(WiFi.localIP()));
+  dh.updateInternalStat();
+  dh.displayStatuses(dh.display_stat);
 }
 
 void loop() {
   timer.tick();
   webserverInLoop();
   mqttInLoop();
-  mdnsInLoop();
   IOprocessInLoop();
   OTAInLoop();
   espConfig.serialCmdCheckInLoop();
+  dh.displayInLoop();
 }

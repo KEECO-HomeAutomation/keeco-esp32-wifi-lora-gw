@@ -6,6 +6,8 @@ ConfigurationHandler::ConfigurationHandler() {
   statuses.wifiIsConnected = false;
   statuses.softApRunning = false;
   statuses.authenticated = false;
+  statuses.mqttIsConnected = false;
+  statuses.loraIsConnected = false;
   sprintf(hostString, "KEECO_%06X", (uint16_t)ESP.getEfuseMac());
   strcpy(wifiSTA.ssid, "DefaultSSID");
   strcpy(wifiSTA.password, "12345678");
@@ -62,8 +64,6 @@ void ConfigurationHandler::initConfiguration() {
     configDoc["mqttpassword"] =  mqttPassword;
     generateUUIDNumArr(uuidNumber);
     uuidStr = generateUUIDStr(uuidNumber);
-    //ESP8266TrueRandom.uuid(uuidNumber);
-    //uuidStr = ESP8266TrueRandom.uuidToString(uuidNumber);
     uuidStr.toCharArray(deviceUUID, 37);
     configDoc["uuid"] = deviceUUID;
     serializeJson(configDoc, tempJsonString);

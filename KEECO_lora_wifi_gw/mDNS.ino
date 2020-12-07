@@ -14,7 +14,3 @@ void start_mDNS() {
 #endif
     }
 }
-
-void mdnsInLoop() {
-    //MDNS.update();
-}
