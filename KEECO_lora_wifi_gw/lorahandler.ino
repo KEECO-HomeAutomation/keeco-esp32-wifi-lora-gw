@@ -17,7 +17,7 @@ LoraHandler::LoraHandler() {
   msgWaitforAck = -1;      // id of the message that is awaiting an acknowledge, -1 if none
 }
 
-bool LoraHandler::sendMessage(String outgoing, byte type = 0) {
+bool LoraHandler::sendMessage(String outgoing , byte type) {
   if (msgWaitforAck != -1) {
     LoRa.beginPacket();                   // start packet
     LoRa.write(destination);              // add destination address
@@ -142,7 +142,8 @@ void LoraHandler::loraInLoop() {
   if (msgWaitforAck != -1) {
     if ((millis() - last_sent) > timeout_hands) {
 #ifdef DEBUG
-      Serial.println("msgId : %d has not received an ACK", msgWaitforAck);
+      Serial.print(msgWaitforAck);
+      Serial.println(" msgId has not received an ACK");
 #endif
       lora_connected = false;
       msgWaitforAck = -1;
@@ -151,7 +152,7 @@ void LoraHandler::loraInLoop() {
   if ((millis() - last_received) > timeout_ping) {
     loraPing();
   }
-  if (lora_conn_prev!=lora_connected){
+  if (lora_conn_prev != lora_connected) {
     espConfig.statuses.loraIsConnected = lora_connected;  // this is triggering the display to be updated
     lora_conn_prev = lora_connected;
   }

@@ -34,6 +34,8 @@
 #define CSS       //makes the web interface nicer but also slower and less reliable
 #define TIMERVALUE 5000
 
+#define BAND    868E6
+
 const char* update_path = "/firmware";
 const char* update_username = "admin";
 const char* update_password = "admin";
@@ -45,7 +47,7 @@ IPAddress netMsk(255, 255, 255, 0);
 
 ConfigurationHandler espConfig;
 displayHandler dh;
-lorahandler lh;
+LoraHandler lh;
 
 
 //timer for various tasks - for future scalability
@@ -68,7 +70,7 @@ auto timer = timer_create_default();
 
 */
 void setup() {
-  Heltec.begin(true /*DisplayEnable Enable*/, false /*LoRa Disable*/, true /*Serial Enable*/);
+  Heltec.begin(true /*DisplayEnable Enable*/, true /*Heltec.LoRa Enable*/, true /*Serial Enable*/, true /*PABOOST Enable*/, BAND /*long BAND*/);
   Heltec.display->setFont(ArialMT_Plain_10);
   Heltec.display->setTextAlignment(TEXT_ALIGN_LEFT);
   Serial.setTimeout(10);
