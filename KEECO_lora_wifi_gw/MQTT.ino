@@ -1,6 +1,6 @@
 WiFiClientSecure wifiClient;
 PubSubClient client(wifiClient);
-#define MQTT_CONN_RETRY_WAIT 5000
+#define MQTT_CONN_RETRY_WAIT 300000
 
 
 long mqttLastConnAttempt = 0;
@@ -17,19 +17,30 @@ long mqttLastConnAttempt = 0;
 */
 
 void initMqtt() {
-  if (!wifiClient.connect(espConfig.mqttServer, 8883)) {
-#ifdef DEBUG
-    Serial.println("Connection to mqtts open port not successful");
-#endif
-  }
-  if (!wifiClient.verify(espConfig.fingerprint, espConfig.mqttServer)) {
-#ifdef DEBUG
-  Serial.println("Fingerprint does not match");
-#endif
-  }
+  int retry = 0;
+  boolean result = false;
   client.setServer(espConfig.mqttServer, 8883);
   client.setCallback(mqttSubCallback);
-
+  client.setSocketTimeout(15);
+  while ((!result) && (retry < 3)) {
+#ifdef DEBUG
+    Serial.print(retry+1);
+    Serial.println(". try to connect to MQTT broker..");
+#endif
+    result = mqttReconnect();
+    retry++;
+  }
+  if (result) {
+#ifdef DEBUG
+    Serial.println("Successfully connected to the MQTT broker");
+#endif
+  }
+  else {
+#ifdef DEBUG
+    Serial.println("Not connected to the MQTT broker");
+#endif
+    mqttLastConnAttempt = millis();
+  }
 }
 
 void mqttSubCallback(char* topic, byte* payload, unsigned int length) {
@@ -47,6 +58,7 @@ boolean mqttReconnect() {
     }
     mqttPublishIP();
     announceNodeState();
+    espConfig.statuses.mqttIsConnected = true;
 #ifdef DEBUG
     Serial.println("Connected to MQTT Server");
 #endif
@@ -67,6 +79,7 @@ void mqttInLoop() {
 #ifdef DEBUG
           Serial.println("Still no connection to MQTT Server");
           Serial.println(client.state());
+          espConfig.statuses.mqttIsConnected = false;
 #endif
         }
       }
@@ -101,7 +114,7 @@ void mqttPublishIP() {
   char temp_topic[128] = " ";
   char mqtt_buffer[64] = " ";
   char IP_topic[32];
-  strcpy(IP_topic,"/IPaddress");
+  strcpy(IP_topic, "/IPaddress");
 
   toStringIp(WiFi.localIP()).toCharArray(mqtt_buffer, 16);
   strcpy(temp_topic, espConfig.deviceUUID);

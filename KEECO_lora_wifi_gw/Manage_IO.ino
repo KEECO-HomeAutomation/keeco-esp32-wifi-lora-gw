@@ -52,7 +52,7 @@ bool timerCallback(void *) {
   /*
      This function is called periodically defined by TIMERVALUE, 5000ms by default
   */
-  Serial.println("Called every 5 sec");
+  //Serial.println("Called every 5 sec");
   return true;
 }
 

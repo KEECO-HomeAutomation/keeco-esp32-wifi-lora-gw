@@ -25,6 +25,7 @@
 #include <ArduinoJson.h>
 #include "configFileHandler.h"
 #include "KEECO_OLED_display.h"
+#include "lorahandler.h"
 #include <stdio.h>
 
 
@@ -44,6 +45,7 @@ IPAddress netMsk(255, 255, 255, 0);
 
 ConfigurationHandler espConfig;
 displayHandler dh;
+lorahandler lh;
 
 
 //timer for various tasks - for future scalability
@@ -116,4 +118,5 @@ void loop() {
   OTAInLoop();
   espConfig.serialCmdCheckInLoop();
   dh.displayInLoop();
+  lh.loraInLoop();
 }
