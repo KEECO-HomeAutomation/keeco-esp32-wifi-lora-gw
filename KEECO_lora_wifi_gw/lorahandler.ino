@@ -17,8 +17,10 @@ LoraHandler::LoraHandler() {
   msgWaitforAck = -1;      // id of the message that is awaiting an acknowledge, -1 if none
 }
 
+//    digitalWrite(25,HIGH); White LED
+
 bool LoraHandler::sendMessage(String outgoing , byte type) {
-  if (msgWaitforAck != -1) {
+  if (msgWaitforAck == -1) {
     LoRa.beginPacket();                   // start packet
     LoRa.write(destination);              // add destination address
     LoRa.write(localAddress);             // add sender address
@@ -27,6 +29,11 @@ bool LoraHandler::sendMessage(String outgoing , byte type) {
     LoRa.write(outgoing.length());        // add payload length
     LoRa.print(outgoing);                 // add payload
     LoRa.endPacket();                     // finish packet and send it
+
+#ifdef DEBUG
+Serial.print("LoRa Sending: ");
+Serial.println(outgoing);
+#endif
 
     last_sent = millis();
     msgWaitforAck = msgCount;
@@ -150,6 +157,7 @@ void LoraHandler::loraInLoop() {
     }
   }
   if ((millis() - last_received) > timeout_ping) {
+    last_received = millis();
     loraPing();
   }
   if (lora_conn_prev != lora_connected) {
