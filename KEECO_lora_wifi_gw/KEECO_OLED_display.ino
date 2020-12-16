@@ -69,6 +69,12 @@ void displayHandler::updateInternalStat() {
     display_stat.wifi_stat = espConfig.statuses.wifiIsConnected;
     display_stat.lora_stat = espConfig.statuses.loraIsConnected;
     Serial.println("states changed");
+    if (espConfig.statuses.loraIsConnected) {
+      digitalWrite(25,HIGH);     //White LED on the board
+    }
+    else {
+      digitalWrite(25,LOW);
+    }
   }
 }
 

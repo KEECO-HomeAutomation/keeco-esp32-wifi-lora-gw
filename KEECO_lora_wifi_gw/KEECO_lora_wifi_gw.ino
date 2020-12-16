@@ -1,6 +1,6 @@
 /*
    KEECO HW Node application software
-   Version 3.2
+   Version 3.9
    Developed by https://github.com/litechniks
 
    Only Manage_IO needs to be modified to implement your application

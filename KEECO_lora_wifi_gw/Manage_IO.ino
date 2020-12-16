@@ -23,8 +23,8 @@
 */
 
 byte mqtt_send_buffer[64];
-char status_topic[128] = "/state";
-char status_text[128] = "Device Online";
+char status_topic[64] = "/state";
+char status_text[64] = "Device Online";
 
 
 void initIO() {
@@ -33,9 +33,9 @@ void initIO() {
     Make sure to set the mqttSubTopicCount variable accordingly.
     Place your additional init code here.
   */
- strcpy(espConfig.mqttSubTopic[0],"/setRelay1");
-  espConfig.mqttSubTopicCount = 1;
-  appendSubtopic(status_topic);
+  strcpy(espConfig.mqttSubTopic[0], "/command");
+  strcpy(espConfig.mqttSubTopic[1], "/remoteOut");
+  espConfig.mqttSubTopicCount = 2;
 }
 
 
@@ -57,7 +57,7 @@ bool timerCallback(void *) {
 }
 
 
-void mqttReceivedCallback(char* topic, byte* payload, unsigned int length) {
+void mqttReceivedCallback(char* subtopic, byte* payload, unsigned int length) {
   /*
      Called every time a message arrives to a subscribed MQTT topic
      If you subscribe to multiple topics please note that you need to manually select the correct topics here for your application with strcmp for example.
@@ -70,39 +70,30 @@ void mqttReceivedCallback(char* topic, byte* payload, unsigned int length) {
   }
 #ifdef DEBUG
   Serial.print("Received topic: ");
-  Serial.println(topic);
+  Serial.println(subtopic);
   Serial.print("MQTT payload received: ");
   Serial.println(PDU);
 #endif
-  /*
-     Place your code here that handles the received MQTT messages
-  */
-}
-
-
-/* ======================================================================================================================================================================================================================
-   Helpers, don't modify below!
-*/
-
-void mqttPublish(char* topic, char* text) {
-  byte bytes[strlen(text)];
-  for (unsigned int i = 0; i < strlen(text); i++) {
-    bytes[i] = (byte)text[i];
-  }
-  client.publish(topic, bytes, sizeof(bytes));
-}
-
-void announceNodeState() {
-  mqttPublish(status_topic, status_text);
+  if (strcmp(subtopic, "command") == 0) {
+    if (strcmp(PDU, "getStatus") == 0) {
+      lh.loraGetStatus();
 #ifdef DEBUG
-  Serial.println("Device status published on MQTT: ");
-  Serial.println(status_text);
+      Serial.println("MQTT Command received: getStatus");
 #endif
+    }
+  }
+  if (strcmp(subtopic, "remoteOut") == 0) {
+    lh.IO_status_loc = payload[0];
+    lh.loraSendStatus((char)lh.IO_status_loc);
+#ifdef DEBUG
+    Serial.print("MQTT Command received: remoteOut, PDU: ");
+    Serial.println(payload[0], BIN);
+#endif
+  }
 
 }
 
-void CharToByte(char* chars, byte* bytes, unsigned int count) {
-  //DO NOT DELETE this function
-  for (unsigned int i = 0; i < count; i++)
-    bytes[i] = (byte)chars[i];
-}
+/*
+   HELPERS
+   void mqttPublish(char* topic, char* text);
+*/

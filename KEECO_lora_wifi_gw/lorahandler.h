@@ -8,6 +8,8 @@ class LoraHandler {
     char IO_status_loc;
     char IO_status_rem;
     bool lora_connected;
+    bool state_changed_loc;
+    bool state_changed_rem;
 
     LoraHandler(void);
 

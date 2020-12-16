@@ -8,6 +8,9 @@ LoraHandler::LoraHandler() {
   IO_status_loc = 0;       // status of the local instance
   IO_status_rem = 0;       // status of the remote instance
 
+  state_changed_loc = false;
+  state_changed_rem = false;
+
   lora_connected = false;  // flag to store the status of the LoRa connection
   lora_conn_prev = false;
   msgCount = 0;            // internal counter to store the message id (0..200)
@@ -17,7 +20,6 @@ LoraHandler::LoraHandler() {
   msgWaitforAck = -1;      // id of the message that is awaiting an acknowledge, -1 if none
 }
 
-//    digitalWrite(25,HIGH); White LED
 
 bool LoraHandler::sendMessage(String outgoing , byte type) {
   if (msgWaitforAck == -1) {
@@ -109,6 +111,7 @@ int LoraHandler::onReceive(int packetSize) {
     }
     if (command.equals("ST")) {                 // ST : Status
       IO_status_rem = (byte)incoming.charAt(2);
+      state_changed_rem = true;
     }
   }
   if (type == 1) {                              // msg type (1 = ping)
@@ -163,6 +166,11 @@ void LoraHandler::loraInLoop() {
   if (lora_conn_prev != lora_connected) {
     espConfig.statuses.loraIsConnected = lora_connected;  // this is triggering the display to be updated
     lora_conn_prev = lora_connected;
+  }
+  if (state_changed_rem) {
+    state_changed_rem = false;
+    
+    //mqtt send data
   }
 }
 

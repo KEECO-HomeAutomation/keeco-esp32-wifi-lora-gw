@@ -24,7 +24,7 @@ void initMqtt() {
   client.setSocketTimeout(15);
   while ((!result) && (retry < 3)) {
 #ifdef DEBUG
-    Serial.print(retry+1);
+    Serial.print(retry + 1);
     Serial.println(". try to connect to MQTT broker..");
 #endif
     result = mqttReconnect();
@@ -44,17 +44,30 @@ void initMqtt() {
 }
 
 void mqttSubCallback(char* topic, byte* payload, unsigned int length) {
-  mqttReceivedCallback(topic, payload, length);
+  unsigned int iter = 0;
+  unsigned int topic_length = strlen(topic);
+  int subtopic_ptr = -1;
+  char sub_topic[64];
+  while (iter < topic_length) {
+    if (topic[(topic_length - iter)] == '/') {
+      subtopic_ptr = topic_length - iter;
+      iter = topic_length + 1;
+    }
+    else {
+      iter++;
+    }
+  }
+  for (int i = 0; i < (topic_length - subtopic_ptr); i++) {
+    sub_topic[i] = topic[subtopic_ptr + i];
+    sub_topic[i + 1] = '\0';
+  }
+  mqttReceivedCallback(subtopic, payload, length);
 }
 
 boolean mqttReconnect() {
-  char temp_topic[128];
   if (client.connect(espConfig.wifiAP.ssid, espConfig.mqttUsername, espConfig.mqttPassword)) {
     for (int i = 0; i < espConfig.mqttSubTopicCount ; i++ ) {
-      appendSubtopicToNew(espConfig.mqttSubTopic[i], temp_topic);
-      Serial.println("Subscribed to MQTT Topic: ");
-      Serial.println(temp_topic);
-      client.subscribe(temp_topic);
+      mqttSubscribe(espConfig.mqttSubTopic[i]);
     }
     mqttPublishIP();
     announceNodeState();
@@ -91,23 +104,44 @@ void mqttInLoop() {
 }
 
 
-void appendSubtopic(char *inputTopic ) {
-  char temp_topic[128] = " ";
-  strcpy(temp_topic, espConfig.deviceUUID);
-  strcat(temp_topic, inputTopic);
-  strcpy(inputTopic, temp_topic);
+
+void mqttPublish(char* topic, char* text) {
+  byte bytes[strlen(text)];
+  for (unsigned int i = 0; i < strlen(text); i++) {
+    bytes[i] = (byte)text[i];
+  }
+  client.publish(topic, bytes, sizeof(bytes));
 }
 
-void appendSubtopicToNew(char *inputTopic, char *outputTopic) {
-  char temp_topic[128] = " ";
-  strcpy(temp_topic, espConfig.deviceUUID);
-  strcat(temp_topic, inputTopic);
-  strcpy(outputTopic, temp_topic);
+void announceNodeState() {
+  mqttPublish(status_topic, status_text);
+#ifdef DEBUG
+  Serial.println("Device status published on MQTT: ");
+  Serial.println(status_text);
+#endif
 }
 
-void mqttPublish(char *pub_subtopic, char *temp_topic, byte *mqtt_buffer, int byte_length) {
-  appendSubtopicToNew(pub_subtopic, temp_topic);
-  client.publish(temp_topic, mqtt_buffer, byte_length);
+void mqttSubscribe(char *subtopic) {
+  char temp_topic[128] = " ";
+  strcpy(temp_topic, espConfig.deviceUUID);
+  strcat(temp_topic, subtopic);
+  client.subscribe(temp_topic);
+#ifdef DEBUG
+  Serial.print("Subscribed to: ");
+  Serial.println(temptopic);
+#endif
+}
+
+void mqttPublish(char *pub_subtopic, char *mqtt_buffer) {
+  char temp_topic[128] = " ";
+  byte bytes[strlen(mqtt_buffer)];
+  strcpy(temp_topic, espConfig.deviceUUID);
+  strcat(temp_topic, pub_subtopic);
+
+  for (unsigned int i = 0; i < strlen(mqtt_buffer); i++) {
+    bytes[i] = (byte)text[i];
+  }
+  client.publish(temp_topic, bytes, ++i);
 }
 
 void mqttPublishIP() {
