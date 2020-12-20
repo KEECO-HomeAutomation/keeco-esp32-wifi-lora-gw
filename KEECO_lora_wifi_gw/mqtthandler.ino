@@ -18,6 +18,7 @@ MqttHandler::MqttHandler(void) {
   mqttLastConnAttempt = 0;
   strcpy(status_topic, "/state");
   strcpy(status_text, "online");
+  //func_ptr = &MqttHandler::mqttSubCallback;
 }
 
 void MqttHandler::setConfigFileHandler(ConfigurationHandler& configH) {
@@ -28,7 +29,7 @@ void MqttHandler::initMqtt() {
   int retry = 0;
   boolean result = false;
   client.setServer(chRef.mqttServer, 8883);
-  client.setCallback(this -> mqttSubCallback);
+  client.setCallback(mqttCbWrapper);
   client.setSocketTimeout(15);
   while ((!result) && (retry < 3)) {
 #ifdef DEBUG

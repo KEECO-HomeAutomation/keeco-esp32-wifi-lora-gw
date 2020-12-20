@@ -104,6 +104,10 @@ void mqttSendStatustoHub(byte status) {
   mh.mqttPublish("/remoteIn", message);
 }
 
+void mqttCbWrapper(char* topic, byte* payload, unsigned int length) {
+  mh.mqttSubCallback(topic, payload, length);
+}
+
 /*
    HELPERS
    void mqttPublish(char* topic, char* text);
