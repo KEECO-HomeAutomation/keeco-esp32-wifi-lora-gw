@@ -1,12 +1,7 @@
-WiFiClientSecure wifiClient;
-PubSubClient client(wifiClient);
 #define MQTT_CONN_RETRY_WAIT 300000
 
-
-long mqttLastConnAttempt = 0;
-
-char status_topic[64] = "/state";
-char status_text[64] = "online";
+WiFiClientSecure wifiClient;
+PubSubClient client(wifiClient);
 
 /*
    We use TLS certifications to encrypt the communication.
@@ -19,11 +14,21 @@ char status_text[64] = "online";
    This is a great tutorial to create your own TLS cert http://www.steves-internet-guide.com/mosquitto-tls/
 */
 
-void initMqtt() {
+MqttHandler::MqttHandler(void) {
+  mqttLastConnAttempt = 0;
+  strcpy(status_topic, "/state");
+  strcpy(status_text, "online");
+}
+
+void MqttHandler::setConfigFileHandler(ConfigurationHandler& configH) {
+  chRef = configH;
+}
+
+void MqttHandler::initMqtt() {
   int retry = 0;
   boolean result = false;
-  client.setServer(espConfig.mqttServer, 8883);
-  client.setCallback(mqttSubCallback);
+  client.setServer(chRef.mqttServer, 8883);
+  client.setCallback(this -> mqttSubCallback);
   client.setSocketTimeout(15);
   while ((!result) && (retry < 3)) {
 #ifdef DEBUG
@@ -46,7 +51,7 @@ void initMqtt() {
   }
 }
 
-void mqttSubCallback(char* topic, byte* payload, unsigned int length) {
+void MqttHandler::mqttSubCallback(char* topic, byte* payload, unsigned int length) {
   unsigned int iter = 0;
   unsigned int topic_length = strlen(topic);
   int subtopic_ptr = -1;
@@ -67,14 +72,14 @@ void mqttSubCallback(char* topic, byte* payload, unsigned int length) {
   mqttReceivedCallback(sub_topic, payload, length);
 }
 
-boolean mqttReconnect() {
-  if (client.connect(espConfig.wifiAP.ssid, espConfig.mqttUsername, espConfig.mqttPassword)) {
-    for (int i = 0; i < espConfig.mqttSubTopicCount ; i++ ) {
-      mqttSubscribe(espConfig.mqttSubTopic[i]);
+boolean MqttHandler::mqttReconnect() {
+  if (client.connect(chRef.wifiAP.ssid, chRef.mqttUsername, chRef.mqttPassword)) {
+    for (int i = 0; i < chRef.mqttSubTopicCount ; i++ ) {
+      mqttSubscribe(chRef.mqttSubTopic[i]);
     }
     mqttPublishIP();
     announceNodeState();
-    espConfig.statuses.mqttIsConnected = true;
+    chRef.statuses.mqttIsConnected = true;
 #ifdef DEBUG
     Serial.println("Connected to MQTT Server");
 #endif
@@ -82,8 +87,8 @@ boolean mqttReconnect() {
   return client.connected();
 }
 
-void mqttInLoop() {
-  if (espConfig.statuses.wifiIsConnected) {
+void MqttHandler::mqttInLoop() {
+  if (chRef.statuses.wifiIsConnected) {
     if (!client.connected()) {
       long now = millis();
       if (now - mqttLastConnAttempt > MQTT_CONN_RETRY_WAIT) {
@@ -95,7 +100,7 @@ void mqttInLoop() {
 #ifdef DEBUG
           Serial.println("Still no connection to MQTT Server");
           Serial.println(client.state());
-          espConfig.statuses.mqttIsConnected = false;
+          chRef.statuses.mqttIsConnected = false;
 #endif
         }
       }
@@ -106,7 +111,7 @@ void mqttInLoop() {
   }
 }
 
-void announceNodeState() {
+void MqttHandler::announceNodeState() {
   mqttPublish(status_topic, status_text);
 #ifdef DEBUG
   Serial.println("Device status published on MQTT: ");
@@ -114,9 +119,8 @@ void announceNodeState() {
 #endif
 }
 
-void mqttSubscribe(char *subtopic) {
-  char temp_topic[128] = " ";
-  strcpy(temp_topic, espConfig.deviceUUID);
+void MqttHandler::mqttSubscribe(char *subtopic) {
+  strcpy(temp_topic, chRef.deviceUUID);
   strcat(temp_topic, subtopic);
   client.subscribe(temp_topic);
 #ifdef DEBUG
@@ -125,10 +129,9 @@ void mqttSubscribe(char *subtopic) {
 #endif
 }
 
-void mqttPublish(char *pub_subtopic, char *mqtt_buffer) {
-  char temp_topic[128] = " ";
+void MqttHandler::mqttPublish(char *pub_subtopic, char *mqtt_buffer) {
   byte bytes[strlen(mqtt_buffer)];
-  strcpy(temp_topic, espConfig.deviceUUID);
+  strcpy(temp_topic, chRef.deviceUUID);
   strcat(temp_topic, pub_subtopic);
 
   for (unsigned int i = 0; i < strlen(mqtt_buffer); i++) {
@@ -137,14 +140,14 @@ void mqttPublish(char *pub_subtopic, char *mqtt_buffer) {
   client.publish(temp_topic, bytes, strlen(mqtt_buffer));
 }
 
-void mqttPublishIP() {
+void MqttHandler::mqttPublishIP() {
   char temp_topic[128] = " ";
   char mqtt_buffer[64] = " ";
   char IP_topic[32];
   strcpy(IP_topic, "/IPaddress");
 
   toStringIp(WiFi.localIP()).toCharArray(mqtt_buffer, 16);
-  strcpy(temp_topic, espConfig.deviceUUID);
+  strcpy(temp_topic, chRef.deviceUUID);
   strcat(temp_topic, IP_topic);
   client.publish(temp_topic, mqtt_buffer, 16);
 }

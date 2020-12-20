@@ -26,6 +26,7 @@
 #include "configFileHandler.h"
 #include "KEECO_OLED_display.h"
 #include "lorahandler.h"
+#include "mqtthandler.h"
 #include <stdio.h>
 
 
@@ -48,6 +49,7 @@ IPAddress netMsk(255, 255, 255, 0);
 ConfigurationHandler espConfig;
 displayHandler dh;
 LoraHandler lh;
+MqttHandler mh;
 
 
 //timer for various tasks - for future scalability
@@ -93,7 +95,7 @@ void setup() {
   initIO();
   Serial.println("[=====___]");
   dh.addLine("Init MQTT");
-  initMqtt();
+  mh.initMqtt();
   Serial.println("[======__]");
   dh.addLine("Init OTA");
   InitOTA();
@@ -113,12 +115,13 @@ void setup() {
   dh.displayStatuses(dh.display_stat);
   lh.setDisplayHandler(dh);
   lh.setConfigFileHandler(espConfig);
+  mh.setConfigFileHandler(espConfig);
 }
 
 void loop() {
   timer.tick();
   webserverInLoop();
-  mqttInLoop();
+  mh.mqttInLoop();
   IOprocessInLoop();
   OTAInLoop();
   espConfig.serialCmdCheckInLoop();

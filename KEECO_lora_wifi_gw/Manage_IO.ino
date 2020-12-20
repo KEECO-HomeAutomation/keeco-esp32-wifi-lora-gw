@@ -101,7 +101,7 @@ void mqttSendStatustoHub(byte status) {
   char message[2];
   message[0] = (char)status;
   message[1] = '\0';
-  mqttPublish("/remoteIn", message);
+  mh.mqttPublish("/remoteIn", message);
 }
 
 /*
