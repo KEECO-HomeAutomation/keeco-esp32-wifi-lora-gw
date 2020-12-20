@@ -18,7 +18,7 @@ class LoraHandler {
     bool loraSendStatus(char stat);
     void loraInLoop(void);
     void setDisplayHandler(displayHandler& displayH);
-    void LoraHandler::setConfigFileHandler(ConfigurationHandler& configH);
+    void setConfigFileHandler(ConfigurationHandler& configH);
 
   private:
     long last_sent;
