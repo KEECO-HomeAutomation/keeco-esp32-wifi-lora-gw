@@ -23,8 +23,6 @@
 */
 
 byte mqtt_send_buffer[64];
-char status_topic[64] = "/state";
-char status_text[64] = "Device Online";
 
 
 void initIO() {
@@ -74,15 +72,21 @@ void mqttReceivedCallback(char* subtopic, byte* payload, unsigned int length) {
   Serial.print("MQTT payload received: ");
   Serial.println(PDU);
 #endif
-  if (strcmp(subtopic, "command") == 0) {
+  if (strcmp(subtopic, "/command") == 0) {
     if (strcmp(PDU, "getStatus") == 0) {
       lh.loraGetStatus();
 #ifdef DEBUG
       Serial.println("MQTT Command received: getStatus");
 #endif
     }
+    if (strcmp(PDU, "showDisplay") == 0) {
+      dh.stat_changed = true;
+#ifdef DEBUG
+      Serial.println("MQTT Command received: showDisplay");
+#endif
+    }
   }
-  if (strcmp(subtopic, "remoteOut") == 0) {
+  if (strcmp(subtopic, "/remoteOut") == 0) {
     lh.IO_status_loc = payload[0];
     lh.loraSendStatus((char)lh.IO_status_loc);
 #ifdef DEBUG
@@ -91,6 +95,13 @@ void mqttReceivedCallback(char* subtopic, byte* payload, unsigned int length) {
 #endif
   }
 
+}
+
+void mqttSendStatustoHub(byte status) {
+  char message[2];
+  message[0] = (char)status;
+  message[1] = '\0';
+  mqttPublish("/remoteIn", message);
 }
 
 /*

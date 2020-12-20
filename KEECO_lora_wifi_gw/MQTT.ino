@@ -5,6 +5,9 @@ PubSubClient client(wifiClient);
 
 long mqttLastConnAttempt = 0;
 
+char status_topic[64] = "/state";
+char status_text[64] = "online";
+
 /*
    We use TLS certifications to encrypt the communication.
    WiFiClientSecure defines that the communication happens with TLS
@@ -61,7 +64,7 @@ void mqttSubCallback(char* topic, byte* payload, unsigned int length) {
     sub_topic[i] = topic[subtopic_ptr + i];
     sub_topic[i + 1] = '\0';
   }
-  mqttReceivedCallback(subtopic, payload, length);
+  mqttReceivedCallback(sub_topic, payload, length);
 }
 
 boolean mqttReconnect() {
@@ -103,16 +106,6 @@ void mqttInLoop() {
   }
 }
 
-
-
-void mqttPublish(char* topic, char* text) {
-  byte bytes[strlen(text)];
-  for (unsigned int i = 0; i < strlen(text); i++) {
-    bytes[i] = (byte)text[i];
-  }
-  client.publish(topic, bytes, sizeof(bytes));
-}
-
 void announceNodeState() {
   mqttPublish(status_topic, status_text);
 #ifdef DEBUG
@@ -128,7 +121,7 @@ void mqttSubscribe(char *subtopic) {
   client.subscribe(temp_topic);
 #ifdef DEBUG
   Serial.print("Subscribed to: ");
-  Serial.println(temptopic);
+  Serial.println(temp_topic);
 #endif
 }
 
@@ -139,9 +132,9 @@ void mqttPublish(char *pub_subtopic, char *mqtt_buffer) {
   strcat(temp_topic, pub_subtopic);
 
   for (unsigned int i = 0; i < strlen(mqtt_buffer); i++) {
-    bytes[i] = (byte)text[i];
+    bytes[i] = (byte)mqtt_buffer[i];
   }
-  client.publish(temp_topic, bytes, ++i);
+  client.publish(temp_topic, bytes, strlen(mqtt_buffer));
 }
 
 void mqttPublishIP() {

@@ -17,6 +17,7 @@ class LoraHandler {
     bool loraGetStatus(void);
     bool loraSendStatus(char stat);
     void loraInLoop(void);
+    void setDisplayHandler(displayHandler& displayH);
 
   private:
     long last_sent;
@@ -26,11 +27,13 @@ class LoraHandler {
     byte localAddress;
     byte destination;
     bool lora_conn_prev;
+    displayHandler dhRef;
+    ConfigurationHandler chRef;
 
     bool sendMessage(String outgoing, byte type = 0);
     int onReceive(int packetSize);
     void sendAck(byte msgId);
-    String errorParser(int ec);
+    String errorParser(int ec); 
 };
 
 #endif

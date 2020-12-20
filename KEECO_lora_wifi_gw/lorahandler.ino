@@ -20,6 +20,13 @@ LoraHandler::LoraHandler() {
   msgWaitforAck = -1;      // id of the message that is awaiting an acknowledge, -1 if none
 }
 
+void LoraHandler::setDisplayHandler(displayHandler& displayH){
+  dhRef = displayH;
+}
+
+void LoraHandler::setConfigFileHandler(ConfigurationHandler& configH){
+  chRef = configH;
+}
 
 bool LoraHandler::sendMessage(String outgoing , byte type) {
   if (msgWaitforAck == -1) {
@@ -164,13 +171,13 @@ void LoraHandler::loraInLoop() {
     loraPing();
   }
   if (lora_conn_prev != lora_connected) {
-    espConfig.statuses.loraIsConnected = lora_connected;  // this is triggering the display to be updated
+    chRef.statuses.loraIsConnected = lora_connected;  // this is triggering the display to be updated
     lora_conn_prev = lora_connected;
   }
   if (state_changed_rem) {
     state_changed_rem = false;
-    
-    //mqtt send data
+    mqttSendStatustoHub(IO_status_rem);
+    dhRef.updateInternalStat();
   }
 }
 

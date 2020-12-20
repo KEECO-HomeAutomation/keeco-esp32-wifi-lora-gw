@@ -107,9 +107,12 @@ void setup() {
   Serial.println("Help: {\"command\":\"help\"}");
   dh.addLine("Help: {\"command\":\"help\"}");
   Serial.println("https://bit.ly/2WPt42i");
+  delay(1000);
   dh.addLine(toStringIp(WiFi.localIP()));
   dh.updateInternalStat();
   dh.displayStatuses(dh.display_stat);
+  lh.setDisplayHandler(dh);
+  lh.setConfigFileHandler(espConfig);
 }
 
 void loop() {
