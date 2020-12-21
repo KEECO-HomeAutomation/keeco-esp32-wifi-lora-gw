@@ -8,10 +8,10 @@ class MqttHandler {
     char status_text[64];
 
     MqttHandler(void);
-   // void (MqttHandler::*func_ptr)(char* topic, byte* payload, unsigned int length);
+    void (*cb_ptr)(char* topic, byte* payload, unsigned int length);
     void setConfigFileHandler(ConfigurationHandler& configH);
     void initMqtt(void);
-    void mqttSubCallback(char* topic, byte* payload, unsigned int length);
+    static void mqttSubCallback(char* topic, byte* payload, unsigned int length);
     boolean mqttReconnect(void);
     void mqttInLoop(void);
     void announceNodeState(void);
