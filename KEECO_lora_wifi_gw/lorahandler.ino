@@ -20,11 +20,11 @@ LoraHandler::LoraHandler() {
   msgWaitforAck = -1;      // id of the message that is awaiting an acknowledge, -1 if none
 }
 
-void LoraHandler::setDisplayHandler(displayHandler& displayH){
+void LoraHandler::setDisplayHandler(displayHandler& displayH) {
   dhRef = displayH;
 }
 
-void LoraHandler::setConfigFileHandler(ConfigurationHandler& configH){
+void LoraHandler::setConfigFileHandler(ConfigurationHandler& configH) {
   chRef = configH;
 }
 
@@ -40,8 +40,8 @@ bool LoraHandler::sendMessage(String outgoing , byte type) {
     LoRa.endPacket();                     // finish packet and send it
 
 #ifdef DEBUG
-Serial.print("LoRa Sending: ");
-Serial.println(outgoing);
+    Serial.print("LoRa Sending: ");
+    Serial.println(outgoing);
 #endif
 
     last_sent = millis();
@@ -206,4 +206,12 @@ String LoraHandler::errorParser(int ec) {
   }
   formatted = "Error Code: " + String(ec) + " | " + error_t;
   return formatted;
+}
+
+LoraHandlerEP::LoraHandlerEP() {
+
+  timeout_ping = 65000;    // timeout for the frequency of ping messages
+
+  localAddress = 0xFD;     // address of this device
+  destination = 0xBB;      // destination to send to
 }

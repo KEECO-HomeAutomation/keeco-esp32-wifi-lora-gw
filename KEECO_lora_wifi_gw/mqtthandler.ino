@@ -152,3 +152,105 @@ void MqttHandler::mqttPublishIP() {
   strcat(temp_topic, IP_topic);
   client.publish(temp_topic, mqtt_buffer, 16);
 }
+
+
+MqttHandlerEP::MqttHandlerEP(void) {
+  mqtt_enabled = false;
+#ifdef DEBUG
+  Serial.println("MQTT EndPoint Mode");
+#endif
+}
+
+void MqttHandlerEP::initMqtt() {
+  int retry = 0;
+  boolean result = false;
+  client.setServer(chRef.mqttServer, 8883);
+  client.setCallback(cb_ptr);
+  client.setSocketTimeout(15);
+  while ((!result) && (retry < 3)) {
+#ifdef DEBUG
+    Serial.print(retry + 1);
+    Serial.println(". try to connect to MQTT broker..");
+#endif
+    result = mqttReconnect();
+    retry++;
+  }
+  if (result) {
+#ifdef DEBUG
+    Serial.println("Successfully connected to the MQTT broker");
+#endif
+  }
+  else {
+#ifdef DEBUG
+    Serial.println("Not connected to the MQTT broker");
+#endif
+    mqttLastConnAttempt = millis();
+    mqtt_enabled = result;
+  }
+}
+
+
+void MqttHandlerEP::announceNodeState() {
+  if (mqtt_enabled) {
+    mqttPublish(status_topic, status_text);
+#ifdef DEBUG
+    Serial.println("Device status published on MQTT: ");
+    Serial.println(status_text);
+#endif
+  }
+  else {
+#ifdef DEBUG
+    Serial.println("MQTT is auto-disabled on this End-Point");
+#endif
+  }
+}
+
+
+void MqttHandlerEP::mqttPublish(char *pub_subtopic, char *mqtt_buffer) {
+  if (mqtt_enabled) {
+    byte bytes[strlen(mqtt_buffer)];
+    strcpy(temp_topic, chRef.deviceUUID);
+    strcat(temp_topic, pub_subtopic);
+
+    for (unsigned int i = 0; i < strlen(mqtt_buffer); i++) {
+      bytes[i] = (byte)mqtt_buffer[i];
+    }
+    client.publish(temp_topic, bytes, strlen(mqtt_buffer));
+  }
+  else {
+#ifdef DEBUG
+    Serial.println("MQTT is auto-disabled on this End-Point");
+#endif
+  }
+}
+
+void MqttHandlerEP::mqttInLoop() {
+  if (mqtt_enabled) {
+    if (chRef.statuses.wifiIsConnected) {
+      if (!client.connected()) {
+        long now = millis();
+        if (now - mqttLastConnAttempt > MQTT_CONN_RETRY_WAIT) {
+          mqttLastConnAttempt = now;
+          if (mqttReconnect()) {
+            Serial.println("MQTT Reconnect Successful.");
+          }
+          else {
+#ifdef DEBUG
+            Serial.println("Still no connection to MQTT Server");
+            Serial.println(client.state());
+            chRef.statuses.mqttIsConnected = false;
+#endif
+          }
+        }
+      }
+      else {
+        client.loop();
+      }
+    }
+  }
+  else {
+#ifdef DEBUG
+    Serial.println("MQTT is auto-disabled on this End-Point");
+#endif
+  }
+}

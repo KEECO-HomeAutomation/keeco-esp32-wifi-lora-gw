@@ -20,7 +20,7 @@ class LoraHandler {
     void setDisplayHandler(displayHandler& displayH);
     void setConfigFileHandler(ConfigurationHandler& configH);
 
-  private:
+  protected:
     long last_sent;
     long last_received;
     int msgCount;
@@ -35,6 +35,10 @@ class LoraHandler {
     int onReceive(int packetSize);
     void sendAck(byte msgId);
     String errorParser(int ec); 
+};
+
+class LoraHandlerEP : public LoraHandler {
+  LoraHandlerEP(void);
 };
 
 #endif

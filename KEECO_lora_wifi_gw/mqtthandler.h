@@ -19,8 +19,19 @@ class MqttHandler {
     void mqttPublish(char *pub_subtopic, char *mqtt_buffer);
     void mqttPublishIP(void);
 
-  private:
+  protected:
     char temp_topic[128];
     ConfigurationHandler chRef;
+};
+
+class MqttHandlerEP : public MqttHandler {
+  public:
+    MqttHandlerEP(void);
+    void initMqtt(void);
+    void announceNodeState(void);
+    void mqttPublish(char *pub_subtopic, char *mqtt_buffer);
+    void mqttInLoop(void);
+    private:
+    bool mqtt_enabled;
 };
 #endif
