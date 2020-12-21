@@ -18,18 +18,17 @@ MqttHandler::MqttHandler(void) {
   mqttLastConnAttempt = 0;
   strcpy(status_topic, "/state");
   strcpy(status_text, "online");
-  cb_ptr = &mqttSubCallback;
 }
 
-void MqttHandler::setConfigFileHandler(ConfigurationHandler& configH) {
+void MqttHandler::setConfigFileHandler(ConfigurationHandler* configH) {
   chRef = configH;
 }
 
 void MqttHandler::initMqtt() {
   int retry = 0;
   boolean result = false;
-  client.setServer(chRef.mqttServer, 8883);
-  client.setCallback(cb_ptr);
+  client.setServer(chRef->mqttServer, 8883);
+  client.setCallback(&MqttHandler::mqttSubCallback);
   client.setSocketTimeout(15);
   while ((!result) && (retry < 3)) {
 #ifdef DEBUG
@@ -74,13 +73,16 @@ void MqttHandler::mqttSubCallback(char* topic, byte* payload, unsigned int lengt
 }
 
 boolean MqttHandler::mqttReconnect() {
-  if (client.connect(chRef.wifiAP.ssid, chRef.mqttUsername, chRef.mqttPassword)) {
-    for (int i = 0; i < chRef.mqttSubTopicCount ; i++ ) {
-      mqttSubscribe(chRef.mqttSubTopic[i]);
+  if (client.connect(chRef->wifiAP.ssid, chRef->mqttUsername, chRef->mqttPassword)) {
+    for (int i = 0; i < chRef->mqttSubTopicCount ; i++ ) {
+      mqttSubscribe(chRef->mqttSubTopic[i]);
     }
     mqttPublishIP();
     announceNodeState();
-    chRef.statuses.mqttIsConnected = true;
+    chRef->statuses.mqttIsConnected = true;
+    if (espConfig.statuses.mqttIsConnected) {
+      Serial.println("MQTT is Connected / read from ESPconfig");
+    }
 #ifdef DEBUG
     Serial.println("Connected to MQTT Server");
 #endif
@@ -89,7 +91,7 @@ boolean MqttHandler::mqttReconnect() {
 }
 
 void MqttHandler::mqttInLoop() {
-  if (chRef.statuses.wifiIsConnected) {
+  if (chRef->statuses.wifiIsConnected) {
     if (!client.connected()) {
       long now = millis();
       if (now - mqttLastConnAttempt > MQTT_CONN_RETRY_WAIT) {
@@ -101,7 +103,7 @@ void MqttHandler::mqttInLoop() {
 #ifdef DEBUG
           Serial.println("Still no connection to MQTT Server");
           Serial.println(client.state());
-          chRef.statuses.mqttIsConnected = false;
+          chRef->statuses.mqttIsConnected = false;
 #endif
         }
       }
@@ -121,7 +123,7 @@ void MqttHandler::announceNodeState() {
 }
 
 void MqttHandler::mqttSubscribe(char *subtopic) {
-  strcpy(temp_topic, chRef.deviceUUID);
+  strcpy(temp_topic, chRef->deviceUUID);
   strcat(temp_topic, subtopic);
   client.subscribe(temp_topic);
 #ifdef DEBUG
@@ -132,13 +134,21 @@ void MqttHandler::mqttSubscribe(char *subtopic) {
 
 void MqttHandler::mqttPublish(char *pub_subtopic, char *mqtt_buffer) {
   byte bytes[strlen(mqtt_buffer)];
-  strcpy(temp_topic, chRef.deviceUUID);
+  strcpy(temp_topic, chRef->deviceUUID);
   strcat(temp_topic, pub_subtopic);
 
   for (unsigned int i = 0; i < strlen(mqtt_buffer); i++) {
     bytes[i] = (byte)mqtt_buffer[i];
   }
   client.publish(temp_topic, bytes, strlen(mqtt_buffer));
+}
+
+void MqttHandler::mqttPublish(char *pub_subtopic, byte mqtt_buffer) {
+  byte bytes[1];
+  bytes[0] = mqtt_buffer;
+  strcpy(temp_topic, chRef->deviceUUID);
+  strcat(temp_topic, pub_subtopic);
+  client.publish(temp_topic, bytes, 1);
 }
 
 void MqttHandler::mqttPublishIP() {
@@ -148,7 +158,7 @@ void MqttHandler::mqttPublishIP() {
   strcpy(IP_topic, "/IPaddress");
 
   toStringIp(WiFi.localIP()).toCharArray(mqtt_buffer, 16);
-  strcpy(temp_topic, chRef.deviceUUID);
+  strcpy(temp_topic, chRef->deviceUUID);
   strcat(temp_topic, IP_topic);
   client.publish(temp_topic, mqtt_buffer, 16);
 }
@@ -164,8 +174,8 @@ MqttHandlerEP::MqttHandlerEP(void) {
 void MqttHandlerEP::initMqtt() {
   int retry = 0;
   boolean result = false;
-  client.setServer(chRef.mqttServer, 8883);
-  client.setCallback(cb_ptr);
+  client.setServer(chRef->mqttServer, 8883);
+  client.setCallback(&MqttHandlerEP::mqttSubCallback);
   client.setSocketTimeout(15);
   while ((!result) && (retry < 3)) {
 #ifdef DEBUG
@@ -182,7 +192,7 @@ void MqttHandlerEP::initMqtt() {
   }
   else {
 #ifdef DEBUG
-    Serial.println("Not connected to the MQTT broker");
+    Serial.println("MQTT is auto-disabled on this End-Point");
 #endif
     mqttLastConnAttempt = millis();
     mqtt_enabled = result;
@@ -209,7 +219,7 @@ void MqttHandlerEP::announceNodeState() {
 void MqttHandlerEP::mqttPublish(char *pub_subtopic, char *mqtt_buffer) {
   if (mqtt_enabled) {
     byte bytes[strlen(mqtt_buffer)];
-    strcpy(temp_topic, chRef.deviceUUID);
+    strcpy(temp_topic, chRef->deviceUUID);
     strcat(temp_topic, pub_subtopic);
 
     for (unsigned int i = 0; i < strlen(mqtt_buffer); i++) {
@@ -226,7 +236,7 @@ void MqttHandlerEP::mqttPublish(char *pub_subtopic, char *mqtt_buffer) {
 
 void MqttHandlerEP::mqttInLoop() {
   if (mqtt_enabled) {
-    if (chRef.statuses.wifiIsConnected) {
+    if (chRef->statuses.wifiIsConnected) {
       if (!client.connected()) {
         long now = millis();
         if (now - mqttLastConnAttempt > MQTT_CONN_RETRY_WAIT) {
@@ -238,7 +248,7 @@ void MqttHandlerEP::mqttInLoop() {
 #ifdef DEBUG
             Serial.println("Still no connection to MQTT Server");
             Serial.println(client.state());
-            chRef.statuses.mqttIsConnected = false;
+            chRef->statuses.mqttIsConnected = false;
 #endif
           }
         }
@@ -248,9 +258,14 @@ void MqttHandlerEP::mqttInLoop() {
       }
     }
   }
-  else {
-#ifdef DEBUG
-    Serial.println("MQTT is auto-disabled on this End-Point");
-#endif
+}
+
+void MqttHandlerEP::mqttPublish(char *pub_subtopic, byte mqtt_buffer) {
+  if (mqtt_enabled) {
+    byte bytes[1];
+    bytes[0] = mqtt_buffer;
+    strcpy(temp_topic, chRef->deviceUUID);
+    strcat(temp_topic, pub_subtopic);
+    client.publish(temp_topic, bytes, 1);
   }
 }

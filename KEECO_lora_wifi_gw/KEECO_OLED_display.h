@@ -9,7 +9,8 @@ class displayHandler {
       bool wifi_stat;
       bool mqtt_stat;
       String local_IP;
-      byte IO_stat; 
+      byte IO_stat_loc;
+      byte IO_stat_rem; 
     };
     statuses display_stat;
     int buffer_ptr;
@@ -22,10 +23,12 @@ class displayHandler {
     void addLine(char* text);
     void addLine(String text);
     void displayBuffer(void);
-    void displayStatuses(statuses local_stat);
+    void displayStatuses(void);
     void boolToString(bool val);
     void updateInternalStat(void);
     void displayInLoop(void);
+    void updateLocStat(byte stat);
+    void updateRemStat(byte stat);
 };
 
 #endif

@@ -8,8 +8,7 @@ class MqttHandler {
     char status_text[64];
 
     MqttHandler(void);
-    void (*cb_ptr)(char* topic, byte* payload, unsigned int length);
-    void setConfigFileHandler(ConfigurationHandler& configH);
+    void setConfigFileHandler(ConfigurationHandler* configH);
     void initMqtt(void);
     static void mqttSubCallback(char* topic, byte* payload, unsigned int length);
     boolean mqttReconnect(void);
@@ -17,11 +16,12 @@ class MqttHandler {
     void announceNodeState(void);
     void mqttSubscribe(char *subtopic);
     void mqttPublish(char *pub_subtopic, char *mqtt_buffer);
+    void mqttPublish(char *pub_subtopic, byte mqtt_buffer);
     void mqttPublishIP(void);
 
   protected:
     char temp_topic[128];
-    ConfigurationHandler chRef;
+    ConfigurationHandler *chRef;
 };
 
 class MqttHandlerEP : public MqttHandler {
@@ -30,6 +30,7 @@ class MqttHandlerEP : public MqttHandler {
     void initMqtt(void);
     void announceNodeState(void);
     void mqttPublish(char *pub_subtopic, char *mqtt_buffer);
+    void mqttPublish(char *pub_subtopic, byte mqtt_buffer);
     void mqttInLoop(void);
     private:
     bool mqtt_enabled;

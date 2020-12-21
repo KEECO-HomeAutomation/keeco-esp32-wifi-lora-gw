@@ -48,9 +48,11 @@ IPAddress netMsk(255, 255, 255, 0);
 
 ConfigurationHandler espConfig;
 displayHandler dh;
-LoraHandler lh;
-MqttHandler mh;
+//LoraHandler lh;
+//MqttHandler mh;
 
+LoraHandlerEP lh;
+MqttHandlerEP mh;
 
 //timer for various tasks - for future scalability
 auto timer = timer_create_default();
@@ -84,6 +86,9 @@ void setup() {
   Serial.println("[=_______]");
   dh.addLine("Init Config");
   espConfig.initConfiguration();
+  lh.setDisplayHandler(&dh);
+  lh.setConfigFileHandler(&espConfig);
+  mh.setConfigFileHandler(&espConfig);
   Serial.println("[==______]");
   dh.addLine("Init WiFi");
   initWifiOnBoot();
@@ -112,10 +117,7 @@ void setup() {
   delay(1000);
   dh.addLine(toStringIp(WiFi.localIP()));
   dh.updateInternalStat();
-  dh.displayStatuses(dh.display_stat);
-  lh.setDisplayHandler(dh);
-  lh.setConfigFileHandler(espConfig);
-  mh.setConfigFileHandler(espConfig);
+  dh.displayStatuses();
 }
 
 void loop() {

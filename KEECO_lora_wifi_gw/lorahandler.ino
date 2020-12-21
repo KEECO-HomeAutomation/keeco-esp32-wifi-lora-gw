@@ -20,11 +20,11 @@ LoraHandler::LoraHandler() {
   msgWaitforAck = -1;      // id of the message that is awaiting an acknowledge, -1 if none
 }
 
-void LoraHandler::setDisplayHandler(displayHandler& displayH) {
+void LoraHandler::setDisplayHandler(displayHandler* displayH) {
   dhRef = displayH;
 }
 
-void LoraHandler::setConfigFileHandler(ConfigurationHandler& configH) {
+void LoraHandler::setConfigFileHandler(ConfigurationHandler* configH) {
   chRef = configH;
 }
 
@@ -120,6 +120,9 @@ int LoraHandler::onReceive(int packetSize) {
       IO_status_rem = (byte)incoming.charAt(2);
       state_changed_rem = true;
     }
+    if (command.equals("SD")) {                 // SD : ShowDisplay
+      dhRef->stat_changed = true;
+    }
   }
   if (type == 1) {                              // msg type (1 = ping)
     sendAck(incomingMsgId);
@@ -140,6 +143,11 @@ int LoraHandler::onReceive(int packetSize) {
 
 bool LoraHandler::loraSendStatus(char stat) {
   String message = "ST" + String(stat);
+  return sendMessage(message);
+}
+
+bool LoraHandler::loraSendShowDisplay() {
+  String message = "SD";
   return sendMessage(message);
 }
 
@@ -171,14 +179,25 @@ void LoraHandler::loraInLoop() {
     loraPing();
   }
   if (lora_conn_prev != lora_connected) {
-    chRef.statuses.loraIsConnected = lora_connected;  // this is triggering the display to be updated
+    chRef->statuses.loraIsConnected = lora_connected;  // this is triggering the display to be updated
     lora_conn_prev = lora_connected;
+    dhRef->stat_changed = true;
   }
   if (state_changed_rem) {
     state_changed_rem = false;
     mqttSendStatustoHub(IO_status_rem);
-    dhRef.updateInternalStat();
+    dhRef->updateRemStat(IO_status_rem);
   }
+  if (state_changed_loc) {
+    state_changed_loc = false;
+    loraSendStatus((char)IO_status_loc);
+    dhRef->updateLocStat(IO_status_loc);
+  }
+}
+
+void LoraHandler::setLocalState(byte stat) {
+  IO_status_loc = stat;
+  state_changed_loc = true;
 }
 
 String LoraHandler::errorParser(int ec) {
