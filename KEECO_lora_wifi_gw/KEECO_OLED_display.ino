@@ -39,16 +39,16 @@ void displayHandler::displayBuffer() {
 }
 
 //128x64 px display
-void displayHandler::displayStatuses(statuses local_stat) {
+void displayHandler::displayStatuses() {
   Heltec.display->clear();
   Heltec.display->drawString(5, 0, "LoRa");
   Heltec.display->drawString(47, 0, "WiFi");
   Heltec.display->drawString(89, 0, "MQTT");
-  boolToString(local_stat.lora_stat);
+  boolToString(display_stat.lora_stat);
   Heltec.display->drawString(5, 10, stat_temp);
-  boolToString(local_stat.wifi_stat);
+  boolToString(display_stat.wifi_stat);
   Heltec.display->drawString(47, 10, stat_temp);
-  boolToString(local_stat.mqtt_stat);
+  boolToString(display_stat.mqtt_stat);
   Heltec.display->drawString(89, 10, stat_temp);
   Heltec.display->drawLine(0, 24, 127, 24);
   Heltec.display->drawLine(40, 0, 40, 24);
@@ -56,8 +56,8 @@ void displayHandler::displayStatuses(statuses local_stat) {
   Heltec.display->drawLine(0, 24, 127, 24);
   Heltec.display->drawString(0, 26, "IP:" + toStringIp(WiFi.localIP()));
   Heltec.display->drawLine(0, 38, 127, 38);
-  Heltec.display->drawString(0, 40, "Statuses");
-  Heltec.display->drawString(0, 50, String(local_stat.IO_stat, BIN));
+  Heltec.display->drawString(0, 40, "Local: " + String(display_stat.IO_stat_loc, BIN));
+  Heltec.display->drawString(0, 50, "Remote: " + String(display_stat.IO_stat_rem, BIN));
   Heltec.display->display();
   displayedAt = millis();
 }
@@ -68,9 +68,10 @@ void displayHandler::updateInternalStat() {
     display_stat.mqtt_stat = espConfig.statuses.mqttIsConnected;
     display_stat.wifi_stat = espConfig.statuses.wifiIsConnected;
     display_stat.lora_stat = espConfig.statuses.loraIsConnected;
-    Serial.println("states changed");
+    Serial.println("from dh: states changed");
     if (espConfig.statuses.loraIsConnected) {
       digitalWrite(25,HIGH);     //White LED on the board
+      
     }
     else {
       digitalWrite(25,LOW);
@@ -81,7 +82,7 @@ void displayHandler::updateInternalStat() {
 void displayHandler::displayInLoop() {
   updateInternalStat();
   if (stat_changed) {
-    displayStatuses(display_stat);
+    displayStatuses();
     stat_changed = false;
     visible = true;
     Serial.println("stat changed if");
@@ -96,6 +97,16 @@ void displayHandler::displayInLoop() {
   }
 }
 
+void displayHandler::updateLocStat(byte stat) {
+  display_stat.IO_stat_loc = stat;
+  stat_changed = true;
+}
+
+void displayHandler::updateRemStat(byte stat) {
+  display_stat.IO_stat_rem = stat;
+  stat_changed = true;
+}
+
 void displayHandler::boolToString(bool val) {
   if (val) {
     stat_temp = "OK";
@@ -103,4 +114,8 @@ void displayHandler::boolToString(bool val) {
   else {
     stat_temp = "NOK";
   }
+}
+
+void displayHandler::showDisplay() {
+  stat_changed = true;
 }

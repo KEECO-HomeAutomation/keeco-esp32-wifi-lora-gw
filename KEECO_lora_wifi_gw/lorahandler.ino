@@ -20,11 +20,11 @@ LoraHandler::LoraHandler() {
   msgWaitforAck = -1;      // id of the message that is awaiting an acknowledge, -1 if none
 }
 
-void LoraHandler::setDisplayHandler(displayHandler& displayH){
+void LoraHandler::setDisplayHandler(displayHandler* displayH) {
   dhRef = displayH;
 }
 
-void LoraHandler::setConfigFileHandler(ConfigurationHandler& configH){
+void LoraHandler::setConfigFileHandler(ConfigurationHandler* configH) {
   chRef = configH;
 }
 
@@ -40,8 +40,8 @@ bool LoraHandler::sendMessage(String outgoing , byte type) {
     LoRa.endPacket();                     // finish packet and send it
 
 #ifdef DEBUG
-Serial.print("LoRa Sending: ");
-Serial.println(outgoing);
+    Serial.print("LoRa Sending: ");
+    Serial.println(outgoing);
 #endif
 
     last_sent = millis();
@@ -115,10 +115,14 @@ int LoraHandler::onReceive(int packetSize) {
     command = incoming.substring(0, 2);
     if (command.equals("GS")) {                 // GS : Get Status
       loraSendStatus(IO_status_loc);
+      dhRef->showDisplay();
     }
     if (command.equals("ST")) {                 // ST : Status
       IO_status_rem = (byte)incoming.charAt(2);
       state_changed_rem = true;
+    }
+    if (command.equals("SD")) {                 // SD : ShowDisplay
+      dhRef->showDisplay();
     }
   }
   if (type == 1) {                              // msg type (1 = ping)
@@ -143,16 +147,21 @@ bool LoraHandler::loraSendStatus(char stat) {
   return sendMessage(message);
 }
 
-bool LoraHandler::loraGetStatus() {
+bool LoraHandler::loraSendShowDisplay() {
+  String message = "SD";
+  return sendMessage(message);
+}
+
+bool LoraHandler::loraGetRemStatus() {
   String message = "GS";
   return sendMessage(message);
 }
 
 void LoraHandler::loraInLoop() {
   int error_c = 0;
-  onReceive(LoRa.parsePacket());
+  error_c = onReceive(LoRa.parsePacket());
 #ifdef DEBUG
-  if (error_c) {
+  if (error_c != -1) {
     Serial.println(errorParser(error_c));
   }
 #endif
@@ -171,14 +180,25 @@ void LoraHandler::loraInLoop() {
     loraPing();
   }
   if (lora_conn_prev != lora_connected) {
-    chRef.statuses.loraIsConnected = lora_connected;  // this is triggering the display to be updated
+    chRef->statuses.loraIsConnected = lora_connected;  // this is triggering the display to be updated
     lora_conn_prev = lora_connected;
+    //dhRef->showDisplay();
   }
   if (state_changed_rem) {
     state_changed_rem = false;
     mqttSendStatustoHub(IO_status_rem);
-    dhRef.updateInternalStat();
+    dhRef->updateRemStat(IO_status_rem);
   }
+  if (state_changed_loc) {
+    state_changed_loc = false;
+    loraSendStatus((char)IO_status_loc);
+    dhRef->updateLocStat(IO_status_loc);
+  }
+}
+
+void LoraHandler::setLocalState(byte stat) {
+  IO_status_loc = stat;
+  state_changed_loc = true;
 }
 
 String LoraHandler::errorParser(int ec) {
@@ -206,4 +226,12 @@ String LoraHandler::errorParser(int ec) {
   }
   formatted = "Error Code: " + String(ec) + " | " + error_t;
   return formatted;
+}
+
+LoraHandlerEP::LoraHandlerEP() {
+
+  timeout_ping = 65000;    // timeout for the frequency of ping messages
+
+  localAddress = 0xFD;     // address of this device
+  destination = 0xBB;      // destination to send to
 }

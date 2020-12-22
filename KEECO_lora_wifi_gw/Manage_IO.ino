@@ -23,6 +23,8 @@
 */
 
 byte mqtt_send_buffer[64];
+byte input_status;
+byte input_status_prev;
 
 
 void initIO() {
@@ -32,8 +34,13 @@ void initIO() {
     Place your additional init code here.
   */
   strcpy(espConfig.mqttSubTopic[0], "/command");
-  strcpy(espConfig.mqttSubTopic[1], "/remoteOut");
+  strcpy(espConfig.mqttSubTopic[1], "/setLocalState");
   espConfig.mqttSubTopicCount = 2;
+
+  for (int i = 36; i < 40; i++) {
+    pinMode(i, INPUT);             //GPIO 36..39 inputs
+  }
+  input_status_prev = 0;
 }
 
 
@@ -43,6 +50,24 @@ void IOprocessInLoop() {
      To publish on MQTT use theis function:
      void mqttPublish(char* topic, char* text);
   */
+  byte btn_stat;
+  input_status = 0;
+  for (int i = 0; i < 4; i++) {
+    btn_stat = (byte)digitalRead((36 + i));
+    if (btn_stat == 1) {
+      input_status = (input_status | (byte)(1 << i));
+    }
+    else {
+      input_status = (input_status & ((byte)~(1 << i)));
+    }
+  }
+  if (input_status != input_status_prev) {
+    Serial.print("Input Changed");
+    Serial.println(input_status, BIN);
+    input_status_prev = input_status;
+    lh.setLocalState(input_status);
+    dh.updateLocStat(input_status);
+  }
 }
 
 
@@ -73,22 +98,22 @@ void mqttReceivedCallback(char* subtopic, byte* payload, unsigned int length) {
   Serial.println(PDU);
 #endif
   if (strcmp(subtopic, "/command") == 0) {
-    if (strcmp(PDU, "getStatus") == 0) {
-      lh.loraGetStatus();
+    if (strcmp(PDU, "getRemoteStatus") == 0) {
+      lh.loraGetRemStatus();
 #ifdef DEBUG
       Serial.println("MQTT Command received: getStatus");
 #endif
     }
     if (strcmp(PDU, "showDisplay") == 0) {
       dh.stat_changed = true;
+      lh.loraSendShowDisplay();
 #ifdef DEBUG
       Serial.println("MQTT Command received: showDisplay");
 #endif
     }
   }
-  if (strcmp(subtopic, "/remoteOut") == 0) {
-    lh.IO_status_loc = payload[0];
-    lh.loraSendStatus((char)lh.IO_status_loc);
+  if (strcmp(subtopic, "/setLocalState") == 0) {
+    lh.setLocalState(payload[0]);
 #ifdef DEBUG
     Serial.print("MQTT Command received: remoteOut, PDU: ");
     Serial.println(payload[0], BIN);
@@ -98,10 +123,8 @@ void mqttReceivedCallback(char* subtopic, byte* payload, unsigned int length) {
 }
 
 void mqttSendStatustoHub(byte status) {
-  char message[2];
-  message[0] = (char)status;
-  message[1] = '\0';
-  mqttPublish("/remoteIn", message);
+  Serial.println("publishing status to mqtt broker");
+  mh.mqttPublish("/remoteIn", status);
 }
 
 /*

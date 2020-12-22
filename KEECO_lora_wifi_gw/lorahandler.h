@@ -14,13 +14,15 @@ class LoraHandler {
     LoraHandler(void);
 
     bool loraPing(void);
-    bool loraGetStatus(void);
+    bool loraGetRemStatus(void);
     bool loraSendStatus(char stat);
+    bool loraSendShowDisplay(void);
     void loraInLoop(void);
-    void setDisplayHandler(displayHandler& displayH);
-    void setConfigFileHandler(ConfigurationHandler& configH);
+    void setDisplayHandler(displayHandler* displayH);
+    void setConfigFileHandler(ConfigurationHandler* configH);
+    void setLocalState(byte stat);
 
-  private:
+  protected:
     long last_sent;
     long last_received;
     int msgCount;
@@ -28,13 +30,18 @@ class LoraHandler {
     byte localAddress;
     byte destination;
     bool lora_conn_prev;
-    displayHandler dhRef;
-    ConfigurationHandler chRef;
+    displayHandler *dhRef;
+    ConfigurationHandler *chRef;
 
     bool sendMessage(String outgoing, byte type = 0);
     int onReceive(int packetSize);
     void sendAck(byte msgId);
-    String errorParser(int ec); 
+    String errorParser(int ec);
+};
+
+class LoraHandlerEP : public LoraHandler {
+  public:
+    LoraHandlerEP(void);
 };
 
 #endif

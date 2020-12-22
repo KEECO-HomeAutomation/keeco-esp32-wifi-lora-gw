@@ -26,6 +26,7 @@
 #include "configFileHandler.h"
 #include "KEECO_OLED_display.h"
 #include "lorahandler.h"
+#include "mqtthandler.h"
 #include <stdio.h>
 
 
@@ -47,8 +48,18 @@ IPAddress netMsk(255, 255, 255, 0);
 
 ConfigurationHandler espConfig;
 displayHandler dh;
-LoraHandler lh;
 
+#define EP    //GW for GateWay, EP for EndPoint
+
+#ifdef GW
+LoraHandler lh;
+MqttHandler mh;
+#endif
+
+#ifdef EP
+LoraHandlerEP lh;
+MqttHandlerEP mh;
+#endif
 
 //timer for various tasks - for future scalability
 auto timer = timer_create_default();
@@ -82,6 +93,9 @@ void setup() {
   Serial.println("[=_______]");
   dh.addLine("Init Config");
   espConfig.initConfiguration();
+  lh.setDisplayHandler(&dh);
+  lh.setConfigFileHandler(&espConfig);
+  mh.setConfigFileHandler(&espConfig);
   Serial.println("[==______]");
   dh.addLine("Init WiFi");
   initWifiOnBoot();
@@ -93,7 +107,7 @@ void setup() {
   initIO();
   Serial.println("[=====___]");
   dh.addLine("Init MQTT");
-  initMqtt();
+  mh.initMqtt();
   Serial.println("[======__]");
   dh.addLine("Init OTA");
   InitOTA();
@@ -110,15 +124,13 @@ void setup() {
   delay(1000);
   dh.addLine(toStringIp(WiFi.localIP()));
   dh.updateInternalStat();
-  dh.displayStatuses(dh.display_stat);
-  lh.setDisplayHandler(dh);
-  lh.setConfigFileHandler(espConfig);
+  dh.displayStatuses();
 }
 
 void loop() {
   timer.tick();
   webserverInLoop();
-  mqttInLoop();
+  mh.mqttInLoop();
   IOprocessInLoop();
   OTAInLoop();
   espConfig.serialCmdCheckInLoop();
