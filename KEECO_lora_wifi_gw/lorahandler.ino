@@ -115,13 +115,14 @@ int LoraHandler::onReceive(int packetSize) {
     command = incoming.substring(0, 2);
     if (command.equals("GS")) {                 // GS : Get Status
       loraSendStatus(IO_status_loc);
+      dhRef->showDisplay();
     }
     if (command.equals("ST")) {                 // ST : Status
       IO_status_rem = (byte)incoming.charAt(2);
       state_changed_rem = true;
     }
     if (command.equals("SD")) {                 // SD : ShowDisplay
-      dhRef->stat_changed = true;
+      dhRef->showDisplay();
     }
   }
   if (type == 1) {                              // msg type (1 = ping)
@@ -151,16 +152,16 @@ bool LoraHandler::loraSendShowDisplay() {
   return sendMessage(message);
 }
 
-bool LoraHandler::loraGetStatus() {
+bool LoraHandler::loraGetRemStatus() {
   String message = "GS";
   return sendMessage(message);
 }
 
 void LoraHandler::loraInLoop() {
   int error_c = 0;
-  onReceive(LoRa.parsePacket());
+  error_c = onReceive(LoRa.parsePacket());
 #ifdef DEBUG
-  if (error_c) {
+  if (error_c != -1) {
     Serial.println(errorParser(error_c));
   }
 #endif
@@ -181,7 +182,7 @@ void LoraHandler::loraInLoop() {
   if (lora_conn_prev != lora_connected) {
     chRef->statuses.loraIsConnected = lora_connected;  // this is triggering the display to be updated
     lora_conn_prev = lora_connected;
-    dhRef->stat_changed = true;
+    //dhRef->showDisplay();
   }
   if (state_changed_rem) {
     state_changed_rem = false;

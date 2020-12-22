@@ -29,6 +29,7 @@ class displayHandler {
     void displayInLoop(void);
     void updateLocStat(byte stat);
     void updateRemStat(byte stat);
+    void showDisplay(void);
 };
 
 #endif

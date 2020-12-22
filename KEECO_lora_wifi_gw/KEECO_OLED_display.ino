@@ -115,3 +115,7 @@ void displayHandler::boolToString(bool val) {
     stat_temp = "NOK";
   }
 }
+
+void displayHandler::showDisplay() {
+  stat_changed = true;
+}

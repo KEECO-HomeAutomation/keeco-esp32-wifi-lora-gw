@@ -48,11 +48,18 @@ IPAddress netMsk(255, 255, 255, 0);
 
 ConfigurationHandler espConfig;
 displayHandler dh;
-//LoraHandler lh;
-//MqttHandler mh;
 
+#define EP    //GW for GateWay, EP for EndPoint
+
+#ifdef GW
+LoraHandler lh;
+MqttHandler mh;
+#endif
+
+#ifdef EP
 LoraHandlerEP lh;
 MqttHandlerEP mh;
+#endif
 
 //timer for various tasks - for future scalability
 auto timer = timer_create_default();

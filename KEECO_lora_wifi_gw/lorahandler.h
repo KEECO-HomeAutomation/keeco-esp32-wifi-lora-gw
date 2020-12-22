@@ -14,7 +14,7 @@ class LoraHandler {
     LoraHandler(void);
 
     bool loraPing(void);
-    bool loraGetStatus(void);
+    bool loraGetRemStatus(void);
     bool loraSendStatus(char stat);
     bool loraSendShowDisplay(void);
     void loraInLoop(void);

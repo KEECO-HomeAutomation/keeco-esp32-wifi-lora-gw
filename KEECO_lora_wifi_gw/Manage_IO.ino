@@ -34,12 +34,13 @@ void initIO() {
     Place your additional init code here.
   */
   strcpy(espConfig.mqttSubTopic[0], "/command");
-  strcpy(espConfig.mqttSubTopic[1], "/remoteOut");
+  strcpy(espConfig.mqttSubTopic[1], "/setLocalState");
   espConfig.mqttSubTopicCount = 2;
 
   for (int i = 36; i < 40; i++) {
     pinMode(i, INPUT);             //GPIO 36..39 inputs
   }
+  input_status_prev = 0;
 }
 
 
@@ -49,19 +50,20 @@ void IOprocessInLoop() {
      To publish on MQTT use theis function:
      void mqttPublish(char* topic, char* text);
   */
-  int btn_stat;
+  byte btn_stat;
+  input_status = 0;
   for (int i = 0; i < 4; i++) {
-    btn_stat = digitalRead(36+i);
-    if (btn_stat) {
-      input_status = (input_status || (btn_stat << i));
+    btn_stat = (byte)digitalRead((36 + i));
+    if (btn_stat == 1) {
+      input_status = (input_status | (byte)(1 << i));
     }
     else {
-      input_status = (input_status && (btn_stat << i));
+      input_status = (input_status & ((byte)~(1 << i)));
     }
   }
   if (input_status != input_status_prev) {
     Serial.print("Input Changed");
-    Serial.println(input_status);
+    Serial.println(input_status, BIN);
     input_status_prev = input_status;
     lh.setLocalState(input_status);
     dh.updateLocStat(input_status);
@@ -96,8 +98,8 @@ void mqttReceivedCallback(char* subtopic, byte* payload, unsigned int length) {
   Serial.println(PDU);
 #endif
   if (strcmp(subtopic, "/command") == 0) {
-    if (strcmp(PDU, "getStatus") == 0) {
-      lh.loraGetStatus();
+    if (strcmp(PDU, "getRemoteStatus") == 0) {
+      lh.loraGetRemStatus();
 #ifdef DEBUG
       Serial.println("MQTT Command received: getStatus");
 #endif
@@ -110,7 +112,7 @@ void mqttReceivedCallback(char* subtopic, byte* payload, unsigned int length) {
 #endif
     }
   }
-  if (strcmp(subtopic, "/remoteOut") == 0) {
+  if (strcmp(subtopic, "/setLocalState") == 0) {
     lh.setLocalState(payload[0]);
 #ifdef DEBUG
     Serial.print("MQTT Command received: remoteOut, PDU: ");
