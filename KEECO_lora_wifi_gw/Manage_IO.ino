@@ -25,6 +25,7 @@
 byte mqtt_send_buffer[64];
 byte input_status;
 byte input_status_prev;
+char message_ctr;
 
 
 void initIO() {
@@ -76,6 +77,15 @@ bool timerCallback(void *) {
      This function is called periodically defined by TIMERVALUE, 5000ms by default
   */
   //Serial.println("Called every 5 sec");
+#ifdef EP
+  lh.setLocalState(message_ctr);
+#endif
+  if (message_ctr == 255) {
+    message_ctr = 0;
+  }
+  else {
+    message_ctr++;
+  }
   return true;
 }
 
@@ -124,7 +134,19 @@ void mqttReceivedCallback(char* subtopic, byte* payload, unsigned int length) {
 
 void mqttSendStatustoHub(byte status) {
   Serial.println("publishing status to mqtt broker");
-  mh.mqttPublish("/remoteIn", status);
+  mh.mqttPublishStatus("/remoteIn", status);
+}
+
+void mqttSendLoraStatustoHub(bool connected) {
+  byte status;
+  Serial.println("publishing Lora status to mqtt broker");
+  if (connected) {
+    status = 1;
+  }
+  else {
+    status = 0;
+  }
+  mh.mqttPublishStatus("/lorastatus", status);
 }
 
 /*

@@ -132,6 +132,7 @@ void MqttHandler::mqttSubscribe(char *subtopic) {
 #endif
 }
 
+
 void MqttHandler::mqttPublish(char *pub_subtopic, char *mqtt_buffer) {
   byte bytes[strlen(mqtt_buffer)];
   strcpy(temp_topic, chRef->deviceUUID);
@@ -142,13 +143,18 @@ void MqttHandler::mqttPublish(char *pub_subtopic, char *mqtt_buffer) {
   }
   client.publish(temp_topic, bytes, strlen(mqtt_buffer));
 }
-
-void MqttHandler::mqttPublish(char *pub_subtopic, byte mqtt_buffer) {
-  byte bytes[1];
-  bytes[0] = mqtt_buffer;
+void MqttHandler::mqttPublishStatus(char *pub_subtopic, byte mqtt_buffer) {
+  char value_string[64];
+  sprintf(value_string, "{\"LoRa_Value\":\"%d\"}", (int)mqtt_buffer);
+  Serial.println(value_string);
+  Serial.println(strlen(value_string));
   strcpy(temp_topic, chRef->deviceUUID);
   strcat(temp_topic, pub_subtopic);
-  client.publish(temp_topic, bytes, 1);
+  byte bytes[strlen(value_string)];
+  for (unsigned int i = 0; i < strlen(value_string); i++) {
+    bytes[i] = (byte)value_string[i];
+  }
+  client.publish(temp_topic, bytes, sizeof(bytes));
 }
 
 void MqttHandler::mqttPublishIP() {
@@ -215,25 +221,6 @@ void MqttHandlerEP::announceNodeState() {
   }
 }
 
-
-void MqttHandlerEP::mqttPublish(char *pub_subtopic, char *mqtt_buffer) {
-  if (mqtt_enabled) {
-    byte bytes[strlen(mqtt_buffer)];
-    strcpy(temp_topic, chRef->deviceUUID);
-    strcat(temp_topic, pub_subtopic);
-
-    for (unsigned int i = 0; i < strlen(mqtt_buffer); i++) {
-      bytes[i] = (byte)mqtt_buffer[i];
-    }
-    client.publish(temp_topic, bytes, strlen(mqtt_buffer));
-  }
-  else {
-#ifdef DEBUG
-    Serial.println("MQTT is auto-disabled on this End-Point");
-#endif
-  }
-}
-
 void MqttHandlerEP::mqttInLoop() {
   if (mqtt_enabled) {
     if (chRef->statuses.wifiIsConnected) {
@@ -260,12 +247,36 @@ void MqttHandlerEP::mqttInLoop() {
   }
 }
 
-void MqttHandlerEP::mqttPublish(char *pub_subtopic, byte mqtt_buffer) {
+
+void MqttHandlerEP::mqttPublish(char *pub_subtopic, char *mqtt_buffer) {
   if (mqtt_enabled) {
-    byte bytes[1];
-    bytes[0] = mqtt_buffer;
+    byte bytes[strlen(mqtt_buffer)];
     strcpy(temp_topic, chRef->deviceUUID);
     strcat(temp_topic, pub_subtopic);
-    client.publish(temp_topic, bytes, 1);
+
+    for (unsigned int i = 0; i < strlen(mqtt_buffer); i++) {
+      bytes[i] = (byte)mqtt_buffer[i];
+    }
+    client.publish(temp_topic, bytes, strlen(mqtt_buffer));
+  }
+  else {
+#ifdef DEBUG
+    Serial.println("MQTT is auto-disabled on this End-Point");
+#endif
+  }
+}
+void MqttHandlerEP::mqttPublishStatus(char *pub_subtopic, byte mqtt_buffer) {
+  char value_string[64];
+  if (mqtt_enabled) {
+    sprintf(value_string, "{\"LoRa_Value\":\"%d\"}", (int)mqtt_buffer);
+    Serial.println(value_string);
+    Serial.println(strlen(value_string));
+    strcpy(temp_topic, chRef->deviceUUID);
+    strcat(temp_topic, pub_subtopic);
+    byte bytes[strlen(value_string)];
+    for (unsigned int i = 0; i < strlen(value_string); i++) {
+      bytes[i] = (byte)value_string[i];
+    }
+    client.publish(temp_topic, bytes, sizeof(bytes));
   }
 }

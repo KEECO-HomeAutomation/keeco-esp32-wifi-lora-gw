@@ -16,7 +16,7 @@ class MqttHandler {
     void announceNodeState(void);
     void mqttSubscribe(char *subtopic);
     void mqttPublish(char *pub_subtopic, char *mqtt_buffer);
-    void mqttPublish(char *pub_subtopic, byte mqtt_buffer);
+    void mqttPublishStatus(char *pub_subtopic, byte mqtt_buffer);
     void mqttPublishIP(void);
 
   protected:
@@ -30,7 +30,7 @@ class MqttHandlerEP : public MqttHandler {
     void initMqtt(void);
     void announceNodeState(void);
     void mqttPublish(char *pub_subtopic, char *mqtt_buffer);
-    void mqttPublish(char *pub_subtopic, byte mqtt_buffer);
+    void mqttPublishStatus(char *pub_subtopic, byte mqtt_buffer);
     void mqttInLoop(void);
     private:
     bool mqtt_enabled;

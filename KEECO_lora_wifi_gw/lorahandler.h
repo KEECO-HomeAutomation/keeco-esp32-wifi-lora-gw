@@ -21,6 +21,7 @@ class LoraHandler {
     void setDisplayHandler(displayHandler* displayH);
     void setConfigFileHandler(ConfigurationHandler* configH);
     void setLocalState(byte stat);
+    bool sendNormalMsg(String msg);
 
   protected:
     long last_sent;

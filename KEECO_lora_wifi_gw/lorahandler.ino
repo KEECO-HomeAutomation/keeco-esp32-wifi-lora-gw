@@ -157,6 +157,10 @@ bool LoraHandler::loraGetRemStatus() {
   return sendMessage(message);
 }
 
+bool LoraHandler::sendNormalMsg(String msg){
+  return sendMessage(msg);
+}
+
 void LoraHandler::loraInLoop() {
   int error_c = 0;
   error_c = onReceive(LoRa.parsePacket());
@@ -182,6 +186,7 @@ void LoraHandler::loraInLoop() {
   if (lora_conn_prev != lora_connected) {
     chRef->statuses.loraIsConnected = lora_connected;  // this is triggering the display to be updated
     lora_conn_prev = lora_connected;
+    mqttSendLoraStatustoHub(lora_connected);
     //dhRef->showDisplay();
   }
   if (state_changed_rem) {

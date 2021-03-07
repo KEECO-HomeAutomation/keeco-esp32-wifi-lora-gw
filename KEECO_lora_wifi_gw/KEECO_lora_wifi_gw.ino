@@ -49,7 +49,7 @@ IPAddress netMsk(255, 255, 255, 0);
 ConfigurationHandler espConfig;
 displayHandler dh;
 
-#define EP    //GW for GateWay, EP for EndPoint
+#define GW    //GW for GateWay, EP for EndPoint
 
 #ifdef GW
 LoraHandler lh;
